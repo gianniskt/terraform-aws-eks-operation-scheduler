@@ -1,0 +1,342 @@
+# Terraform AWS EKS Operation Scheduler
+
+[![Terraform](https://img.shields.io/badge/terraform-%235835CC.svg?style=flat&logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=flat&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
+
+This Terraform module provisions AWS Lambda functions and EventBridge (CloudWatch Events) rules to automatically start and stop EKS node groups on customizable schedules (weekly or monthly).
+
+## Features
+
+- 🕐 **Flexible Scheduling**: Weekly or monthly schedules with customizable start/stop times
+- 💰 **Cost Optimization**: Automatically scale node groups to zero during off-hours
+- 🔒 **Least-Privilege IAM**: Secure IAM roles with minimal required permissions
+- 📊 **CloudWatch Integration**: Full logging and monitoring support
+- 🎯 **Multi-Cluster Support**: Manage multiple EKS clusters with different schedules
+- 🔄 **Independent Control**: Enable/disable start and stop operations separately
+
+## Architecture
+
+The solution uses AWS Lambda functions triggered by EventBridge rules to schedule start and stop operations for EKS node groups:
+
+- **EventBridge (CloudWatch Events)**: Triggers Lambda functions based on cron schedules
+- **Lambda Functions**: Scales EKS node groups by updating Auto Scaling Group capacity
+- **IAM Roles**: Least-privilege permissions for Lambda to manage node groups
+
+For each cluster/node-group defined in the `clusters` variable, two workflows are created:
+- One for **starting** the node group (restoring desired capacity)
+- One for **stopping** the node group (scaling to zero)
+
+### Important: EKS Control Plane Costs
+
+**Unlike Azure AKS**, AWS EKS control plane **cannot be stopped** and costs **$0.10/hour (~$72/month)** regardless of node state. This module saves costs by:
+- ✅ Stopping EC2 worker nodes (scale to zero)
+- ❌ Control plane remains active (always billed)
+
+**Expected Savings**: 40-60% reduction on total costs (compute only, not control plane).
+
+## Usage
+
+### Basic Example
+
+```hcl
+module "eks_scheduler" {
+  source = "gianniskt/eks-operation-scheduler/aws"
+
+  clusters = {
+    dev-cluster = {
+      cluster_name    = "my-eks-dev-cluster"
+      node_group_name = "my-node-group"
+      region          = "us-east-1"
+      
+      start_schedule = {
+        type   = "weekly"
+        days   = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        hour   = 8
+        minute = 0
+      }
+      
+      stop_schedule = {
+        type   = "weekly"
+        days   = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        hour   = 18
+        minute = 0
+      }
+      
+      min_size     = 1
+      desired_size = 2
+      max_size     = 5
+      
+      enabled_start = true
+      enabled_stop  = true
+    }
+  }
+
+  tags = {
+    Environment = "dev"
+    ManagedBy   = "terraform"
+  }
+}
+```
+
+### Multiple Clusters Example
+
+```hcl
+module "eks_scheduler" {
+  source = "gianniskt/eks-operation-scheduler/aws"
+
+  clusters = {
+    dev-cluster = {
+      cluster_name    = "dev-eks-cluster"
+      node_group_name = "dev-node-group"
+      region          = "us-east-1"
+      start_schedule = {
+        type   = "weekly"
+        days   = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        hour   = 8
+        minute = 0
+      }
+      stop_schedule = {
+        type   = "weekly"
+        days   = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        hour   = 18
+        minute = 0
+      }
+      min_size     = 1
+      desired_size = 2
+      max_size     = 5
+    }
+    
+    staging-cluster = {
+      cluster_name    = "staging-eks-cluster"
+      node_group_name = "staging-node-group"
+      region          = "eu-west-1"
+      start_schedule = {
+        type   = "monthly"
+        week   = 1
+        day    = "Monday"
+        hour   = 9
+        minute = 0
+      }
+      stop_schedule = {
+        type   = "monthly"
+        week   = 1
+        day    = "Monday"
+        hour   = 17
+        minute = 0
+      }
+      min_size     = 2
+      desired_size = 3
+      max_size     = 10
+    }
+  }
+}
+```
+
+## Requirements
+
+## Requirements
+
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.0 |
+| <a name="requirement_archive"></a> [archive](#requirement\_archive) | ~> 2.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.0 |
+
+## Providers
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| <a name="provider_archive"></a> [archive](#provider\_archive) | ~> 2.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 6.0 |
+
+## Inputs
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_clusters"></a> [clusters](#input\_clusters) | Map of EKS clusters with their scheduling configurations | <pre>map(object({<br/>    cluster_name    = string<br/>    node_group_name = string<br/>    region          = string<br/>    start_schedule = object({<br/>      type   = optional(string, "weekly")<br/>      days   = optional(list(string), [])<br/>      week   = optional(number, null)<br/>      day    = optional(string, null)<br/>      hour   = number<br/>      minute = number<br/>    })<br/>    stop_schedule = object({<br/>      type   = optional(string, "weekly")<br/>      days   = optional(list(string), [])<br/>      week   = optional(number, null)<br/>      day    = optional(string, null)<br/>      hour   = number<br/>      minute = number<br/>    })<br/>    min_size        = number<br/>    desired_size    = number<br/>    max_size        = number<br/>    enabled_start   = optional(bool, true)<br/>    enabled_stop    = optional(bool, true)<br/>  }))</pre> | n/a | yes |
+| <a name="input_lambda_runtime"></a> [lambda\_runtime](#input\_lambda\_runtime) | Lambda runtime version | `string` | `"python3.11"` | no |
+| <a name="input_lambda_timeout"></a> [lambda\_timeout](#input\_lambda\_timeout) | Lambda function timeout in seconds | `number` | `60` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | Common tags to apply to all resources | `map(string)` | `{}` | no |
+
+## Outputs
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| <a name="output_eventbridge_rule_arns"></a> [eventbridge\_rule\_arns](#output\_eventbridge\_rule\_arns) | ARNs of the EventBridge rules |
+| <a name="output_eventbridge_rule_names"></a> [eventbridge\_rule\_names](#output\_eventbridge\_rule\_names) | Names of the EventBridge rules |
+| <a name="output_iam_role_arns"></a> [iam\_role\_arns](#output\_iam\_role\_arns) | ARNs of the IAM roles created for Lambda functions |
+| <a name="output_lambda_function_arns"></a> [lambda\_function\_arns](#output\_lambda\_function\_arns) | ARNs of the created Lambda functions |
+| <a name="output_lambda_function_names"></a> [lambda\_function\_names](#output\_lambda\_function\_names) | Names of the created Lambda functions |
+| <a name="output_log_group_names"></a> [log\_group\_names](#output\_log\_group\_names) | Names of the CloudWatch log groups |
+| <a name="output_workflow_schedules"></a> [workflow\_schedules](#output\_workflow\_schedules) | Map of workflow schedules for reference |
+
+## Schedule Configuration
+
+### Weekly Schedules
+
+Specify `type = "weekly"` and a list of `days`:
+
+```hcl
+start_schedule = {
+  type   = "weekly"
+  days   = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+  hour   = 8   # UTC
+  minute = 0
+}
+```
+
+**EventBridge Cron**: `cron(0 8 ? * MON,TUE,WED,THU,FRI *)`
+
+### Monthly Schedules
+
+Specify `type = "monthly"`, `week` (1-4 for occurrence), and `day`:
+
+```hcl
+start_schedule = {
+  type   = "monthly"
+  week   = 1          # 1st occurrence
+  day    = "Monday"   # Day of week
+  hour   = 8
+  minute = 0
+}
+```
+
+**EventBridge Cron**: `cron(0 8 ? * MON#1 *)`
+
+### Disabling Schedules
+
+You can temporarily disable scheduling for maintenance:
+
+```hcl
+enabled_start = false  # Disable start scheduling
+enabled_stop  = true   # Keep stop scheduling enabled
+```
+
+## How It Works
+
+1. **EventBridge Rule** triggers at the specified cron schedule
+2. **Lambda Function** is invoked with cluster/node-group context
+3. Lambda calls **EKS API** to get the node group's Auto Scaling Group name
+4. Lambda calls **Auto Scaling API** to update ASG capacity:
+   - **Stop**: Sets `MinSize=0, DesiredCapacity=0, MaxSize=0`
+   - **Start**: Sets `MinSize`, `DesiredCapacity`, `MaxSize` to configured values
+5. **Auto Scaling Group** terminates or launches EC2 instances
+6. Nodes join/leave the EKS cluster automatically
+
+## Monitoring
+
+### CloudWatch Logs
+
+Lambda execution logs are available in CloudWatch:
+
+```bash
+aws logs tail /aws/lambda/eks-scheduler-<cluster-key>-<action> --follow --region <region>
+```
+
+### Manual Testing
+
+Test Lambda function manually:
+
+```bash
+aws lambda invoke \
+  --function-name eks-scheduler-dev-cluster-start \
+  --region us-east-1 \
+  response.json && cat response.json
+```
+
+### Check Node Group Status
+
+```bash
+aws eks describe-nodegroup \
+  --cluster-name my-eks-cluster \
+  --nodegroup-name my-node-group \
+  --region us-east-1 \
+  --query 'nodegroup.scalingConfig'
+```
+
+## Cost Estimation
+
+### Monthly Costs (Example: 1 EKS Cluster)
+
+| Component | Cost |
+|-----------|------|
+| **EKS Control Plane** | **$72.00** (always running) |
+| Lambda Invocations | $0.20 (2 invocations/day × 20 days) |
+| EventBridge Rules | Free tier (14/month << 1M/month) |
+| CloudWatch Logs | $0.50 (7-day retention) |
+| **EC2 Compute (stopped)** | **$0.00** (when scaled to zero) |
+| **Total (off-hours)** | **~$72.70/month** |
+
+### Savings Calculation
+
+- **Without Scheduler** (2x t3.medium 24/7): ~$132/month
+- **With Scheduler** (8hrs/day, 5 days/week): ~$79/month
+- **Monthly Savings**: ~$53 (~40% reduction)
+
+## Limitations
+
+- ❌ **Cannot stop EKS control plane** - Always costs $72/month
+- ⚠️ **No graceful pod draining** - Pods are terminated when nodes scale to zero
+- ⚠️ **Cold start delays** - Nodes take 1-2 minutes to become ready after scaling up
+- ⚠️ **Stateful workloads** - Require special handling (persistent volumes, StatefulSets)
+- ⚠️ **Single node group per cluster** - Module supports one node group per cluster (can be extended)
+
+## Comparison with AKS Scheduler
+
+| Feature | AKS Scheduler | EKS Scheduler |
+|---------|---------------|---------------|
+| **Control Plane Stop** | ✅ Yes ($0 when stopped) | ❌ No ($72/month always) |
+| **Node Stop** | ✅ Yes | ✅ Yes |
+| **Scheduler Service** | Azure Logic Apps | AWS Lambda + EventBridge |
+| **Terraform Support** | ✅ Excellent | ✅ Excellent |
+| **Cost Savings** | 70-90% | 40-60% |
+| **Implementation** | ARM Template | Lambda Function |
+
+## Troubleshooting
+
+### Lambda Fails with "AccessDenied"
+
+Ensure the Lambda IAM role has permissions to:
+- Describe EKS node groups
+- Update Auto Scaling Groups
+
+### Nodes Don't Scale Down
+
+Check:
+- EventBridge rule is enabled (`state = "ENABLED"`)
+- Lambda logs for errors
+- ASG has no scaling policies preventing scale-down
+
+### Schedule Not Triggering
+
+- EventBridge uses **UTC timezone**
+- Verify cron expression with AWS EventBridge console
+- Check Lambda permissions for EventBridge invocation
+
+## Examples
+
+See the [`examples/`](examples/) directory for complete usage examples:
+
+- [`examples/basic/`](examples/basic/): Single cluster with weekly schedule
+- [`examples/multi-cluster/`](examples/multi-cluster/): Multiple clusters with different schedules
+- [`examples/monthly/`](examples/monthly/): Monthly scheduling example
+
+## License
+
+MIT License
+
+## Contributing
+
+Contributions welcome! Please open an issue or pull request.
+
+## Related Projects
+
+- [terraform-azurerm-aks-operation-scheduler](https://github.com/gianniskt/terraform-azurerm-aks-operation-scheduler) - AKS version of this module
+- [Karpenter](https://karpenter.sh/) - Advanced Kubernetes node provisioning
+- [AWS Node Termination Handler](https://github.com/aws/aws-node-termination-handler) - Graceful node shutdown
