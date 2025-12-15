@@ -1,5 +1,7 @@
 formatter: "markdown table"
 
+version: "~> 1.0"
+
 header-from: main.tf
 footer-from: ""
 
@@ -21,6 +23,8 @@ content: |-
   - 🔄 **Independent Control**: Enable/disable start and stop operations separately
 
   ## Architecture
+
+  [View architecture diagram](https://github.com/gianniskt/terraform-aws-eks-operation-scheduler/blob/main/diagrams/eks-operation-scheduler-diagram.PNG)
 
   The solution uses AWS Lambda functions triggered by EventBridge rules to schedule start and stop operations for EKS node groups:
 

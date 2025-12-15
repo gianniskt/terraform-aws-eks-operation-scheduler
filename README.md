@@ -16,6 +16,8 @@ This Terraform module provisions AWS Lambda functions and EventBridge (CloudWatc
 
 ## Architecture
 
+[View architecture diagram](https://github.com/gianniskt/terraform-aws-eks-operation-scheduler/blob/main/diagrams/eks-operation-scheduler-diagram.PNG)
+
 The solution uses AWS Lambda functions triggered by EventBridge rules to schedule start and stop operations for EKS node groups:
 
 - **EventBridge (CloudWatch Events)**: Triggers Lambda functions based on cron schedules
