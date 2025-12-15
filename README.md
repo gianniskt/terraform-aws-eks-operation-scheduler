@@ -7,7 +7,7 @@ This Terraform module provisions AWS Lambda functions and EventBridge (CloudWatc
 
 ## Features
 
-- 🕐 **Flexible Scheduling**: Weekly or monthly schedules with customizable start/stop times
+- 🕐 **Flexible Scheduling**: Weekly or monthly schedules with customizable start/stop times [UTC timezone]
 - 💰 **Cost Optimization**: Automatically scale node groups to zero during off-hours
 - 🔒 **Least-Privilege IAM**: Secure IAM roles with minimal required permissions
 - 📊 **CloudWatch Integration**: Full logging and monitoring support
