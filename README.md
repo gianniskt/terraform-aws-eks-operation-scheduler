@@ -142,9 +142,9 @@ module "eks_operation_scheduler" {
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.0 |
-| <a name="requirement_archive"></a> [archive](#requirement\_archive) | ~> 2.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement_terraform) | ~> 1.0 |
+| <a name="requirement_archive"></a> [archive](#requirement_archive) | ~> 2.0 |
+| <a name="requirement_aws"></a> [aws](#requirement_aws) | ~> 6.0 |
 
 ## Providers
 
@@ -152,8 +152,8 @@ module "eks_operation_scheduler" {
 
 | Name | Version |
 |------|---------|
-| <a name="provider_archive"></a> [archive](#provider\_archive) | ~> 2.0 |
-| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 6.0 |
+| <a name="provider_archive"></a> [archive](#provider_archive) | ~> 2.0 |
+| <a name="provider_aws"></a> [aws](#provider_aws) | ~> 6.0 |
 
 ## Inputs
 
@@ -161,10 +161,10 @@ module "eks_operation_scheduler" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_clusters"></a> [clusters](#input\_clusters) | Map of EKS clusters with their scheduling configurations | <pre>map(object({<br/>    cluster_name    = string<br/>    node_group_name = string<br/>    region          = string<br/>    start_schedule = object({<br/>      type   = optional(string, "weekly")<br/>      days   = optional(list(string), [])<br/>      week   = optional(number, null)<br/>      day    = optional(string, null)<br/>      hour   = number<br/>      minute = number<br/>    })<br/>    stop_schedule = object({<br/>      type   = optional(string, "weekly")<br/>      days   = optional(list(string), [])<br/>      week   = optional(number, null)<br/>      day    = optional(string, null)<br/>      hour   = number<br/>      minute = number<br/>    })<br/>    min_size        = number<br/>    desired_size    = number<br/>    max_size        = number<br/>    enabled_start   = optional(bool, true)<br/>    enabled_stop    = optional(bool, true)<br/>  }))</pre> | n/a | yes |
-| <a name="input_lambda_runtime"></a> [lambda\_runtime](#input\_lambda\_runtime) | Lambda runtime version | `string` | `"python3.11"` | no |
-| <a name="input_lambda_timeout"></a> [lambda\_timeout](#input\_lambda\_timeout) | Lambda function timeout in seconds | `number` | `60` | no |
-| <a name="input_tags"></a> [tags](#input\_tags) | Common tags to apply to all resources | `map(string)` | `{}` | no |
+| <a name="input_clusters"></a> [clusters](#input_clusters) | Map of EKS clusters with their scheduling configurations | ```map(object({ cluster_name = string node_group_name = string region = string start_schedule = object({ type = optional(string, "weekly") days = optional(list(string), []) week = optional(number, null) day = optional(string, null) hour = number minute = number }) stop_schedule = object({ type = optional(string, "weekly") days = optional(list(string), []) week = optional(number, null) day = optional(string, null) hour = number minute = number }) min_size = number desired_size = number max_size = number enabled_start = optional(bool, true) enabled_stop = optional(bool, true) }))``` | n/a | yes |
+| <a name="input_lambda_runtime"></a> [lambda_runtime](#input_lambda_runtime) | Lambda runtime version | `string` | `"python3.11"` | no |
+| <a name="input_lambda_timeout"></a> [lambda_timeout](#input_lambda_timeout) | Lambda function timeout in seconds | `number` | `60` | no |
+| <a name="input_tags"></a> [tags](#input_tags) | Common tags to apply to all resources | `map(string)` | `{}` | no |
 
 ## Outputs
 
@@ -172,13 +172,13 @@ module "eks_operation_scheduler" {
 
 | Name | Description |
 |------|-------------|
-| <a name="output_eventbridge_rule_arns"></a> [eventbridge\_rule\_arns](#output\_eventbridge\_rule\_arns) | ARNs of the EventBridge rules |
-| <a name="output_eventbridge_rule_names"></a> [eventbridge\_rule\_names](#output\_eventbridge\_rule\_names) | Names of the EventBridge rules |
-| <a name="output_iam_role_arns"></a> [iam\_role\_arns](#output\_iam\_role\_arns) | ARNs of the IAM roles created for Lambda functions |
-| <a name="output_lambda_function_arns"></a> [lambda\_function\_arns](#output\_lambda\_function\_arns) | ARNs of the created Lambda functions |
-| <a name="output_lambda_function_names"></a> [lambda\_function\_names](#output\_lambda\_function\_names) | Names of the created Lambda functions |
-| <a name="output_log_group_names"></a> [log\_group\_names](#output\_log\_group\_names) | Names of the CloudWatch log groups |
-| <a name="output_workflow_schedules"></a> [workflow\_schedules](#output\_workflow\_schedules) | Map of workflow schedules for reference |
+| <a name="output_eventbridge_rule_arns"></a> [eventbridge_rule_arns](#output_eventbridge_rule_arns) | ARNs of the EventBridge rules |
+| <a name="output_eventbridge_rule_names"></a> [eventbridge_rule_names](#output_eventbridge_rule_names) | Names of the EventBridge rules |
+| <a name="output_iam_role_arns"></a> [iam_role_arns](#output_iam_role_arns) | ARNs of the IAM roles created for Lambda functions |
+| <a name="output_lambda_function_arns"></a> [lambda_function_arns](#output_lambda_function_arns) | ARNs of the created Lambda functions |
+| <a name="output_lambda_function_names"></a> [lambda_function_names](#output_lambda_function_names) | Names of the created Lambda functions |
+| <a name="output_log_group_names"></a> [log_group_names](#output_log_group_names) | Names of the CloudWatch log groups |
+| <a name="output_workflow_schedules"></a> [workflow_schedules](#output_workflow_schedules) | Map of workflow schedules for reference |
 
 ## Schedule Configuration
 
@@ -298,7 +298,6 @@ aws eks describe-nodegroup \
 | **Control Plane Stop** | ✅ Yes ($0 when stopped) | ❌ No ($72/month always) |
 | **Node Stop** | ✅ Yes | ✅ Yes |
 | **Scheduler Service** | Azure Logic Apps | AWS Lambda + EventBridge |
-| **Terraform Support** | ✅ Excellent | ✅ Excellent |
 | **Cost Savings** | 70-90% | 40-60% |
 | **Implementation** | ARM Template | Lambda Function |
 

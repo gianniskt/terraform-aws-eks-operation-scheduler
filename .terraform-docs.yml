@@ -1,7 +1,5 @@
 formatter: "markdown table"
 
-version: "~> 1.0"
-
 header-from: main.tf
 footer-from: ""
 
@@ -278,7 +276,6 @@ content: |-
   | **Control Plane Stop** | ✅ Yes ($0 when stopped) | ❌ No ($72/month always) |
   | **Node Stop** | ✅ Yes | ✅ Yes |
   | **Scheduler Service** | Azure Logic Apps | AWS Lambda + EventBridge |
-  | **Terraform Support** | ✅ Excellent | ✅ Excellent |
   | **Cost Savings** | 70-90% | 40-60% |
   | **Implementation** | ARM Template | Lambda Function |
 
@@ -339,8 +336,8 @@ settings:
   anchor: true
   color: true
   default: true
-  escape: true
-  html: true
+  escape: false
+  html: false
   indent: 2
   required: true
   sensitive: true
